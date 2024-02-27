@@ -1,5 +1,6 @@
-import { UserModel, UserAddressModel } from '../models/users.js';
-import ts from "../utils/tokenServices.js"
+import mongoose from "mongoose";
+import { UserModel, UserAddressModel } from "../models/users.js";
+import ts from "../utils/tokenServices.js";
 
 const signIn = async (req, res) => {
   try {
@@ -27,8 +28,8 @@ const logIn = async (req, res) => {
   try {
     let user = await UserModel.findOne({ email: req.body.email });
     if (user) {
-      if (await  ts.hashCompare(req.body.password, user.password)) {
-        const token = await  ts.createToken({
+      if (await ts.hashCompare(req.body.password, user.password)) {
+        const token = await ts.createToken({
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
@@ -54,10 +55,53 @@ const logIn = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.query.id);
+    if (user) {
+      res.status(200).send({
+        user,
+      });
+    } else {
+      res.status(400).send({
+        message: "User not found!",
+      });
+    }
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || "Internal Server Error!!",
+    });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const user = await UserModel.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(req.body._id) },
+      req.body,
+      { new: true }
+    );
+    if (user) {
+      res.status(200).send({
+        message: "User updated successfully",
+        user,
+      });
+    } else {
+      res.status(400).send({
+        message: "User not found!",
+      });
+    }
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || "Internal Server Error!!",
+    });
+  }
+};
+
 const addAddress = async (req, res) => {
   try {
-    const { userId, ...newAddressData } = req.body;
-    const user = await UserModel.findById(userId);
+    const { _id, ...newAddressData } = req.body;
+    const user = await UserModel.findById(_id);
     if (user) {
       const newAddress = new UserAddressModel(newAddressData);
       user.address.push(newAddress);
@@ -104,17 +148,28 @@ const updateAddress = async (req, res) => {
   }
 };
 
-const updateUser = async (req, res) => {
+const deleteAddress = async (req, res) => {
   try {
-    const user = await UserModel.findOneAndUpdate({ _id: req.body._id },req.body, { new: true });
+    const { userId, addressId } = req.body;
+    const user = await UserModel.findById(userId);
     if (user) {
-      res.status(200).send({
-        message: "User updated successfully",
-        user,
-      });
+      const updatedAddress = user.address.filter(
+        (adrs) => adrs._id.toString() !== addressId
+      );
+      if (updatedAddress.length === user.address.length) {
+        res.status(400).send({
+          message: "Address not found!",
+        });
+      } else {
+        user.address = updatedAddress;
+        await user.save();
+        res.status(200).send({
+          message: "Address deleted!",
+        });
+      }
     } else {
       res.status(400).send({
-        message: "User not found!"
+        message: "User not found!",
       });
     }
   } catch (error) {
@@ -124,4 +179,12 @@ const updateUser = async (req, res) => {
   }
 };
 
-export default { signIn, logIn, updateUser , addAddress, updateAddress };
+export default {
+  signIn,
+  logIn,
+  getUserById,
+  updateUser,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+};

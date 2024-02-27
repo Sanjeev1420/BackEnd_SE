@@ -7,10 +7,10 @@ const router = express.Router()
 router.post('/signin' , UserController.signIn)
 router.post('/login' , UserController.logIn)
 router.put('/updateUser' , TokenValidation,UserController.updateUser)
-router.get('/:id', )
-router.post('/addAddress', TokenValidation,UserController.addAddress)
-router.post('/updateAddress' , TokenValidation,UserController.updateAddress)
-router.delete('/deleteAddress' , TokenValidation)
+router.get('/', UserController.getUserById)
+router.post('/addUserAddress', TokenValidation,UserController.addAddress)
+router.put('/updateUserAddress' , TokenValidation,UserController.updateAddress)
+router.delete('/deleteUserAddress' , TokenValidation,UserController.deleteAddress)
 
 export default router
 

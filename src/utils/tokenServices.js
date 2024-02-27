@@ -18,9 +18,9 @@ let createToken = async(payload)=>{
     return token
 }
 
-const decodeToken = async (token) => {
+const verifyToken = async (token) => {
     try {
-       const payload =  await jwt.decode(token);
+       const payload =  await jwt.verify(token,process.env.JWT_SECRET);
        return payload
     } catch (error) {
         console.error("Error decoding token:", error);
@@ -28,10 +28,9 @@ const decodeToken = async (token) => {
     }
 }
 
-
 export default {
     hashPassword,
     hashCompare,
     createToken,
-    decodeToken
+    verifyToken
 }

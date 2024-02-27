@@ -6,7 +6,7 @@ const Validate = async(req,res,next)=>{
 
         if(token)
         {
-            let payload = await ts.decodeToken(token)
+            let payload = await ts.verifyToken(token)
             
             if(Math.round(+new Date()/1000)<payload.exp)
                 next()
