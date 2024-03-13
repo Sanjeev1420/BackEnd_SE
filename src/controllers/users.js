@@ -101,23 +101,29 @@ const updateUser = async (req, res) => {
 const addAddress = async (req, res) => {
   try {
     const { _id, ...newAddressData } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(_id)) {
+      return res.status(400).send({ message: "Invalid user ID" });
+    }
     const user = await UserModel.findById(_id);
     if (user) {
       const newAddress = new UserAddressModel(newAddressData);
       user.address.push(newAddress);
       await user.save();
-      res.status(201).send({ message: "Address added successfully" });
+      const updatedUser = await UserModel.findById(_id);
+      res.status(201).send({ message: "Address added successfully", user : updatedUser});
     } else {
       res.status(404).send({ message: "User not found!" });
     }
   } catch (error) {
-    res.status(500).send({ message: error.message || "Internal Server Error" });
+    console.error(error);
+    res.status(500).send({ message: "Internal Server Error" });
   }
 };
 
+
 const updateAddress = async (req, res) => {
   try {
-    const { userId, addressId, ...addressData } = req.body;
+    const { userId, _id, ...addressData } = req.body;
     const user = await UserModel.findById(userId);
 
     if (!user) {
@@ -126,7 +132,7 @@ const updateAddress = async (req, res) => {
       });
     }
 
-    const addressToUpdate = user.address.id(addressId);
+    const addressToUpdate = user.address.id(_id);
 
     if (!addressToUpdate) {
       return res.status(404).send({
@@ -137,9 +143,10 @@ const updateAddress = async (req, res) => {
     Object.assign(addressToUpdate, addressData);
 
     await user.save();
-
+    const updatedUser = await UserModel.findById(userId);
     res.status(200).send({
       message: "Address updated successfully!",
+      user : updatedUser
     });
   } catch (error) {
     res.status(500).send({
@@ -150,7 +157,7 @@ const updateAddress = async (req, res) => {
 
 const deleteAddress = async (req, res) => {
   try {
-    const { userId, addressId } = req.body;
+    const { userId, addressId } = req.query;
     const user = await UserModel.findById(userId);
     if (user) {
       const updatedAddress = user.address.filter(
@@ -163,8 +170,10 @@ const deleteAddress = async (req, res) => {
       } else {
         user.address = updatedAddress;
         await user.save();
+        const updatedUser = await UserModel.findById(userId);
         res.status(200).send({
           message: "Address deleted!",
+          user : updatedUser
         });
       }
     } else {

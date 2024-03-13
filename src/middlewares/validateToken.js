@@ -7,11 +7,7 @@ const Validate = async(req,res,next)=>{
         if(token)
         {
             let payload = await ts.verifyToken(token)
-            
-            if(Math.round(+new Date()/1000)<payload.exp)
-                next()
-            else    
-                res.status(402).send({message:"Token Expired"})
+            next()
         }
         else
         {
@@ -21,10 +17,16 @@ const Validate = async(req,res,next)=>{
         }
         
     } catch (error) {
-        res.status(500).send({
-            message:"Internal Server Error",
-            error: error.message
-        })
+        if(error.message === 'jwt expired'){
+            res.status(402).send({
+                message : "Session Expired!"
+            });
+        }else{
+            res.status(500).send({
+                message : "Internal Server Error"
+            });
+        }
+       
     }
 }
 
