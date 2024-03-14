@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
-import ts from "../utils/tokenServices.js";
 import CategoryOnline from "../models/categoryOnline.js";
+import rc from "../utils/redisServices.js";
 
 const addCategory = async (req, res) => {
   try {
@@ -28,16 +28,31 @@ const addCategory = async (req, res) => {
 
 const getAllCategories = async (req, res) => {
   try {
-    const categories = await CategoryOnline.find();
-    res.status(200).json(categories);
+    let cachedCategories = await rc.get("categoriesOnline");
+    
+    if (cachedCategories) {
+      const categories = JSON.parse(cachedCategories);
+      res.status(200).send({
+        source: "cache",
+        categories,
+      });
+      return; 
+    }
+
+    const dbCategories = await CategoryOnline.find();
+    rc.set("categoriesOnline", JSON.stringify(dbCategories), "EX", 3600);
+    res.status(200).send({
+      source: "db",
+      categories: dbCategories,
+    });
   } catch (error) {
     res.status(500).send({
-        message: error.message || "Internal Server Error",
+      message: error.message || "Internal Server Error",
     });
   }
 };
 
-export default  {
+export default {
   addCategory,
-  getAllCategories
+  getAllCategories,
 };
